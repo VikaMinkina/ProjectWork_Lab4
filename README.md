@@ -20,7 +20,7 @@
 1. Клонируйте репозиторий:
 ```bash
 git clone https://github.com/VikaMinkina/ProjectWork_Lab4.git
-cd fire-guard
+cd ProjectWork_Lab4
 ```
 2. Установите зависимости:
 ```bash
