@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fire Guard - Расчет опасности</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Fire Guard</h1>
+            <p class="subtitle">Система поддержки принятия решений</p>
+        </header>
+        
+        <nav>
+            <a href="/" class="nav-link active">Расчет опасности</a>
+            <a href="/analytics" class="nav-link">Аналитика</a>
+            <a href="/report" class="nav-link">Отчет о модели</a>
+        </nav>
+        
+        <main>
+            <div class="card">
+                <h2>Ввод данных метеостанции</h2>
+                <form id="prediction-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="month">Месяц</label>
+                            <select id="month" name="month">
+                                <option value="jan">Январь</option>
+                                <option value="feb">Февраль</option>
+                                <option value="mar">Март</option>
+                                <option value="apr">Апрель</option>
+                                <option value="may">Май</option>
+                                <option value="jun">Июнь</option>
+                                <option value="jul">Июль</option>
+                                <option value="aug" selected>Август</option>
+                                <option value="sep">Сентябрь</option>
+                                <option value="oct">Октябрь</option>
+                                <option value="nov">Ноябрь</option>
+                                <option value="dec">Декабрь</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="day">День недели</label>
+                            <select id="day" name="day">
+                                <option value="mon">Понедельник</option>
+                                <option value="tue">Вторник</option>
+                                <option value="wed">Среда</option>
+                                <option value="thu">Четверг</option>
+                                <option value="fri">Пятница</option>
+                                <option value="sat">Суббота</option>
+                                <option value="sun" selected>Воскресенье</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <h3>Метеорологические параметры</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="temp">Температура (C)</label>
+                            <input type="number" id="temp" name="temp" value="30.0" step="0.1" min="0" max="50">
+                        </div>
+                        <div class="form-group">
+                            <label for="rh">Влажность (%)</label>
+                            <input type="number" id="rh" name="rh" value="25" min="0" max="100">
+                        </div>
+                        <div class="form-group">
+                            <label for="wind">Ветер (км/ч)</label>
+                            <input type="number" id="wind" name="wind" value="5.0" step="0.1" min="0" max="50">
+                        </div>
+                        <div class="form-group">
+                            <label for="rain">Осадки (мм/м2)</label>
+                            <input type="number" id="rain" name="rain" value="0.0" step="0.1" min="0" max="50">
+                        </div>
+                    </div>
+                    
+                    <h3>Индексы пожарной опасности (FWI)</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="ffmc">FFMC</label>
+                            <input type="number" id="ffmc" name="ffmc" value="92.0" step="0.1" min="0" max="101">
+                        </div>
+                        <div class="form-group">
+                            <label for="dmc">DMC</label>
+                            <input type="number" id="dmc" name="dmc" value="120.0" step="0.1" min="0" max="500">
+                        </div>
+                        <div class="form-group">
+                            <label for="dc">DC</label>
+                            <input type="number" id="dc" name="dc" value="700.0" step="0.1" min="0" max="1000">
+                        </div>
+                        <div class="form-group">
+                            <label for="isi">ISI</label>
+                            <input type="number" id="isi" name="isi" value="15.0" step="0.1" min="0" max="100">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Выполнить расчет</button>
+                </form>
+                
+                <div id="result" class="result hidden">
+                    <h3>Результат расчета</h3>
+                    <p><strong>Класс опасности:</strong> <span id="result-class"></span></p>
+                    <p><strong>Достоверность:</strong> <span id="result-confidence"></span>%</p>
+                </div>
+                
+                <div id="error" class="error hidden"></div>
+            </div>
+        </main>
+        
+        <footer>
+            <p>ФГАОУ ВО МГТУ СТАНКИН | Дисциплина: Применение методов машинного обучения | 2026</p>
+        </footer>
+    </div>
+    
+    <script>
+        document.getElementById('prediction-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                month: document.getElementById('month').value,
+                day: document.getElementById('day').value,
+                temp: document.getElementById('temp').value,
+                rh: document.getElementById('rh').value,
+                wind: document.getElementById('wind').value,
+                rain: document.getElementById('rain').value,
+                ffmc: document.getElementById('ffmc').value,
+                dmc: document.getElementById('dmc').value,
+                dc: document.getElementById('dc').value,
+                isi: document.getElementById('isi').value
+            };
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('result').classList.remove('hidden');
+                    document.getElementById('error').classList.add('hidden');
+                    document.getElementById('result-class').textContent = data.class;
+                    document.getElementById('result-confidence').textContent = data.confidence;
+                } else {
+                    document.getElementById('result').classList.add('hidden');
+                    document.getElementById('error').classList.remove('hidden');
+                    document.getElementById('error').textContent = 'Ошибка: ' + data.error;
+                }
+            } catch (err) {
+                document.getElementById('result').classList.add('hidden');
+                document.getElementById('error').classList.remove('hidden');
+                document.getElementById('error').textContent = 'Ошибка соединения с сервером';
+            }
+        });
+    </script>
+</body>
+</html>
